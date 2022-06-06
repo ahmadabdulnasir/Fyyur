@@ -1,4 +1,4 @@
-Fyyur
+Fyyur Project for Udacity Fullstack Nano Degree Program
 -----
 
 ## Introduction
