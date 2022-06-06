@@ -40,12 +40,7 @@ class Genre(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
 
-#TODO: remove Initial population of the Genre table here --> No, for grading they want it to be blank
-# (just the schema is defined) and we count on the web form validators to only show valid choices (forms.py)
-
 # Association tables for Artist to Genre (many2many) and Venue to Genre (many2many)
-# DEFINE the Genre table as the child since it normally doesn't matter which we pick, but in this case,
-# its common to both many2many relationships and we have to constrain the parents to just one backref!
 artist_genre_table = db.Table('artist_genre_table',
     db.Column('genre_id', db.Integer,
       db.ForeignKey('Genre.id'),
@@ -81,17 +76,13 @@ class Venue(db.Model):
     facebook_link = db.Column(db.String(120))
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
-    # Here we link the associative table for the m2m relationship with genre
+    #link the associative table for the m2m relationship with genre
     genres = db.relationship(
       'Genre', secondary=venue_genre_table, backref=db.backref('venues')
     )
-    # secondary links this to the associative (m2m) table name
-    # can refences like venue.genres with the above statement
-    # backref creates an attribute on Venue objects so we can also reference like: genre.venues
     website_link = db.Column(db.String(120))
     seeking_talent = db.Column(db.Boolean, default=False)
     seeking_description = db.Column(db.String(120))
-
     # Venue is the parent (one-to-many) of a Show (Artist is also a foreign key, in def. of Show)
     # In the parent is where we put the db.relationship in SQLAlchemy
     # Can reference show.venue (as well as venue.shows)
@@ -108,27 +99,18 @@ class Artist(db.Model):
     city = db.Column(db.String(120))
     state = db.Column(db.String(120))
     phone = db.Column(db.String(120))
-    # Genre should be its own table, with a many2many relationship with Artist
-    # and another many2many relationship with Venue
+    # Genre have its own table, with a many2many relationship with Artist
     # genres = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
-
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
+    # TODO: Done implement any missing fields, as a database migration using Flask-Migrate
     # Here we link the associative table for the m2m relationship with genre
     genres = db.relationship(
-        'Genre', secondary=artist_genre_table, backref=db.backref('artists'))
-    # secondary links this to the associative (m2m) table name
-    # can refences like artist.genres with the above statement
-    # backref creates an attribute on Artist objects so we can also reference like: genre.artists
-
+        'Genre', secondary=artist_genre_table, backref=db.backref('artists')
+    )
     website_link = db.Column(db.String(120))
     seeking_venue = db.Column(db.Boolean, default=False)
     seeking_description = db.Column(db.String(120))
-
-    # Artist is the parent (one-to-many) of a Show (Venue is also a foreign key, in def. of Show)
-    # In the parent is where we put the db.relationship in SQLAlchemy
-    # Can reference show.artist (as well as artist.shows)
     shows = db.relationship('Show', backref='artist', lazy=True)
 
     def __repr__(self):
@@ -136,17 +118,19 @@ class Artist(db.Model):
 
 
 
-# TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
+# TODO Done Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
 class Show(db.Model):
     __tablename__ = 'Show'
 
     id = db.Column(db.Integer, primary_key=True)
     # Start time required field
     start_time = db.Column(db.DateTime, nullable=False,
-                           default=datetime.utcnow)
+      default=datetime.utcnow
+    )
 
     artist_id = db.Column(db.Integer, db.ForeignKey(
-        'Artist.id'), nullable=False)   # Foreign key is the tablename.pk
+        'Artist.id'), nullable=False
+    )   # Foreign key is the tablename.pk
     venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'), nullable=False)
 
     def __repr__(self):
@@ -205,48 +189,39 @@ def venues():
   # }]
   venues = Venue.query.all()
 
-  data = []   # A list of dictionaries, where city, state, and venues are dictionary keys
-
-  # Create a set of all the cities/states combinations uniquely
+  data = []
   cities_states = set()
   for venue in venues:
       cities_states.add((venue.city, venue.state))  # Add tuple
 
-  # Turn the set into an ordered list
   cities_states = list(cities_states)
   # Sorts on second column first (state), then by city.
   cities_states.sort(key=itemgetter(1, 0))
 
   now = datetime.now()
 
-    # we iterate over the unique values to seed the data dictionary with city/state locations
   for loc in cities_states:
       # For this location, see if there are any venues there, and add if so
       venues_list = []
       for venue in venues:
           if (venue.city == loc[0]) and (venue.state == loc[1]):
-
               # If we've got a venue to add, check how many upcoming shows it has
               venue_shows = Show.query.filter_by(venue_id=venue.id).all()
               num_upcoming = 0
               for show in venue_shows:
                   if show.start_time > now:
                       num_upcoming += 1
-
               venues_list.append({
                   "id": venue.id,
                   "name": venue.name,
                   "num_upcoming_shows": num_upcoming
               })
-
       # After all venues are added to the list for a given location, add it to the data dictionary
       data.append({
           "city": loc[0],
           "state": loc[1],
           "venues": venues_list
       })
-  print("Here ...")
-  print(data)
   return render_template('pages/venues.html', areas=data);
 
 @app.route('/venues/search', methods=['POST'])
@@ -255,8 +230,6 @@ def search_venues():
   # seach for Hop should return "The Musical Hop".
   # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
   search_term = request.form.get('search_term', '').strip()
-
-  # Use filter, not filter_by when doing LIKE search (i=insensitive to case)
   venues = Venue.query.filter(Venue.name.ilike('%' + search_term + '%')).all()   # Wildcards search before and after
   print(venues)
   venue_list = []
@@ -267,11 +240,10 @@ def search_venues():
       for show in venue_shows:
           if show.start_time > now:
               num_upcoming += 1
-
       venue_list.append({
           "id": venue.id,
           "name": venue.name,
-          "num_upcoming_shows": num_upcoming  # FYI, template does nothing with this
+          "num_upcoming_shows": num_upcoming
       })
 
   response={
@@ -285,13 +257,11 @@ def show_venue(venue_id):
   # shows the venue page with the given venue_id
   # TODO: Done replace with real venue data from the venues table, using venue_id
   venue = Venue.query.get(venue_id)   # Returns object by primary key, or None
-  print(venue)
   if not venue:
       # Didn't return one, user must've hand-typed a link into the browser that doesn't exist
       # Redirect home
       return redirect(url_for('index'))
   else:
-      # genres needs to be a list of genre strings for the template
       genres = [genre.name for genre in venue.genres]
       # Get a list of shows, and count the ones in the past and future
       past_shows = []
@@ -457,7 +427,7 @@ def create_venue_submission():
           new_venue = Venue(name=name, city=city, state=state, address=address, phone=phone,
                             seeking_talent=seeking_talent, seeking_description=seeking_description, image_link=image_link,
                             website_link=website_link, facebook_link=facebook_link)
-          # genres can't take a list of strings, it needs to be assigned to db objects
+          # genres can't take a list of strings, it needs to be db objects
           # genres from the form is like: ['Alternative', 'Classical', 'Country']
           for genre in genres:
               # fetch_genre = session.query(Genre).filter_by(name=genre).one_or_none()  # Throws an exception if more than one returned, returns None if none
@@ -496,16 +466,14 @@ def create_venue_submission():
 def delete_venue(venue_id):
   # TODO: Done Complete this endpoint for taking a venue_id, and using
   # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
-
   # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
   # clicking that button delete it from the db then redirect the user to the homepage
   venue = Venue.query.get(venue_id)
   if not venue:
-      # User somehow faked this call, redirect home
       return redirect(url_for('index'))
   else:
       error_on_delete = False
-      # Need to hang on to venue name since will be lost after delete
+      # save the vanue name for response message
       venue_name = venue.name
       try:
           db.session.delete(venue)
@@ -669,11 +637,9 @@ def show_artist(artist_id):
   artist = Artist.query.get(artist_id)
   print(artist)
   if not artist:
-      # Didn't return one, user must've hand-typed a link into the browser that doesn't exist
-      # Redirect home
+      # Artist not found, Redirect home
       return redirect(url_for('index'))
   else:
-      # genres needs to be a list of genre strings for the template
       genres = [genre.name for genre in artist.genres]
       # Get a list of shows, and count the ones in the past and future
       past_shows = []
@@ -703,7 +669,6 @@ def show_artist(artist_id):
           "id": artist_id,
           "name": artist.name,
           "genres": genres,
-          # "address": artist.address,
           "city": artist.city,
           "state": artist.state,
           # Put the dashes back into phone number
@@ -742,7 +707,6 @@ def edit_artist(artist_id):
   # Returns object based on primary key, or None.  Guessing get is faster than filter_by
   artist = Artist.query.get(artist_id)
   if not artist:
-      # User typed in a URL that doesn't exist, redirect home
       return redirect(url_for('index'))
   else:
       # Otherwise, valid artist.  We can prepopulate the form with existing data like this.
@@ -774,7 +738,6 @@ def edit_artist_submission(artist_id):
   name = form.name.data.strip()
   city = form.city.data.strip()
   state = form.state.data
-  # address = form.address.data.strip()
   phone = form.phone.data
   # Normalize DB.  Strip anything from phone that isn't a number
   phone = re.sub('\D', '', phone) # e.g. (819) 392-1234 --> 8193921234
@@ -795,27 +758,17 @@ def edit_artist_submission(artist_id):
       try:
           # First get the existing artist object
           artist = Artist.query.get(artist_id)
-          # artist = Artist.query.filter_by(id=artist_id).one_or_none()
           # Update fields
           artist.name = name
           artist.city = city
           artist.state = state
-          # artist.address = address
           artist.phone = phone
           artist.seeking_venue = seeking_venue
           artist.seeking_description = seeking_description
           artist.image_link = image_link
           artist.website_link = website_link
           artist.facebook_link = facebook_link
-
-          # First we need to clear (delete) all the existing genres off the artist otherwise it just adds them
-          # For some reason this didn't work! Probably has to do with flushing/lazy, etc.
-          # for genre in artist.genres:
-          #     artist.genres.remove(genre)
-          # artist.genres.clear()  # Either of these work.
           artist.genres = []
-          # genres can't take a list of strings, it needs to be assigned to db objects
-          # genres from the form is like: ['Alternative', 'Classical', 'Country']
           for genre in genres:
               # Throws an exception if more than one returned, returns None if none
               fetch_genre = Genre.query.filter_by(name=genre).one_or_none()
@@ -874,8 +827,6 @@ def edit_venue(venue_id):
   else:
       # Otherwise, valid venue.  We can prepopulate the form with existing data like this:
       form = VenueForm(obj=venue)
-  # Prepopulate the form with the current values.  This is only used by template rendering!
-  # genres needs to be a list of genre strings for the template
   genres = [genre.name for genre in venue.genres ]
   venue = {
       "id": venue_id,
@@ -934,7 +885,6 @@ def edit_venue_submission(venue_id):
           venue.website_link = website_link
           venue.facebook_link = facebook_link
           venue.genres = []
-          # genres from the form is like: ['Alternative', 'Classical', 'Country']
           for genre in genres:
               # Throws an exception if more than one returned, returns None if none
               fetch_genre = Genre.query.filter_by(name=genre).one_or_none()
@@ -1008,17 +958,13 @@ def create_artist_submission():
             image_link=image_link, website_link=website_link, 
             facebook_link=facebook_link
           )
-          # genres can't take a list of strings, it needs to be assigned to db objects
-          # genres from the form is like: ['Alternative', 'Classical', 'Country']
           for genre in genres:
-              # fetch_genre = session.query(Genre).filter_by(name=genre).one_or_none()  # Throws an exception if more than one returned, returns None if none
-              # Throws an exception if more than one returned, returns None if none
               fetch_genre = Genre.query.filter_by(name=genre).one_or_none()
               if fetch_genre:
                   # if found a genre, append it to the list
                   new_artist.genres.append(fetch_genre)
               else:
-                  # fetch_genre was None. It's not created yet, so create it
+                  # Genre does not exist, so create it
                   new_genre = Genre(name=genre)
                   db.session.add(new_genre)
                   # Create a new Genre item and append it
@@ -1049,7 +995,6 @@ def delete_artist(artist_id):
     # Deletes a artist based on AJAX call from the artist page
     artist = Artist.query.get(artist_id)
     if not artist:
-        # User somehow faked this call, redirect home
         return redirect(url_for('index'))
     else:
         error_on_delete = False
@@ -1123,7 +1068,6 @@ def shows():
   shows = Show.query.all()
 
   for show in shows:
-      # Can reference show.artist, show.venue
       data.append({
           "venue_id": show.venue.id,
           "venue_name": show.venue.name,
