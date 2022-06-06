@@ -758,7 +758,7 @@ def edit_artist(artist_id):
       "state": artist.state,
       # Put the dashes back into phone number
       "phone": (artist.phone[:3] + '-' + artist.phone[3:6] + '-' + artist.phone[6:]),
-      "website": artist.website,
+      "website_link": artist.website_link,
       "facebook_link": artist.facebook_link,
       "seeking_venue": artist.seeking_venue,
       "seeking_description": artist.seeking_description,
